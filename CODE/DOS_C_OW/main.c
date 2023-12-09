@@ -15,6 +15,7 @@
 #define int_video_set_mode 0x00
 #define mode_4025_greyscale 0x00
 #define mode_8025_greyscale 0x02
+#define int_video_get_mode 0x0F
 
 #define KEY_ESC 27
 #define KEY_ENT 13
@@ -28,9 +29,11 @@ enum {
 } gamestate_t;
 
 // Globals
+char orig_video_mode;
 union REGPACK* reg_pack;
 int gamestate;
 char c;
+
 
 // Utility Function definitions
 
@@ -120,8 +123,18 @@ void game_loop(){
 
 // --- CODE STARTS HERE ---
 int main(){
+    // Save video mode off
+    reg_pack->h.ah = int_video_get_mode;
+    intr(int_video,reg_pack);
+    orig_video_mode = reg_pack->h.al;
+
+    // Start the game already
     gamestate=GS_TITLE;
     game_loop();
+
+    // Restore the video mode
+    reg_pack->w.ax = (int_video_set_mode) << 8 | orig_video_mode;
+    intr(int_video,reg_pack);
     return 0;
 }
 
