@@ -15,6 +15,8 @@
 #define int_video_set_mode 0x00
 #define mode_4025_greyscale 0x00
 #define mode_8025_greyscale 0x02
+#define int_video_set_cursor_pos 0x02
+#define int_video_get_cursor_pos 0x03
 #define int_video_get_mode 0x0F
 
 #define KEY_ESC 27
@@ -28,7 +30,13 @@ enum {
     GS_EXIT
 } gamestate_t;
 
+// Global Struct definitions
+//struct {
+//
+//} entity_t;
+
 // Globals
+unsigned int lfsr; // Current random number
 char orig_video_mode;
 union REGPACK* reg_pack;
 int gamestate;
@@ -48,6 +56,32 @@ void basic_print(char* s){
     printf("%s%c%c",s,'\r','\n');
 }
 
+// Mimics BASIC locate, 1 indexed
+void basic_locate(char row, char col){
+    reg_pack->h.ah = int_video_get_cursor_pos;
+    intr(int_video,reg_pack); // Sets active page
+    reg_pack->h.ah = int_video_set_cursor_pos;
+    reg_pack->h.dh = row - 1;
+    reg_pack->h.dl = col - 1;
+    intr(int_video,reg_pack);
+}
+
+// Random function, does not simulate BASIC's and instead implements a linear feedback shift register
+// Input: 0, to get the existing random number again
+//        1, to get a new random number
+//        -1 to -32768 to re-seed
+unsigned int basic_random(int x){
+    if(x == 0) {// just return last value
+        return lfsr;
+    }
+    else if ( x < 0 ){ // New Seed, needs to be less than
+        lfsr=-1*x;
+        printf("Seeding with: %du\r\n",lfsr);
+    }
+    // Calculate new random number
+    lfsr = ((((lfsr >> 0)^(lfsr >> 2)^(lfsr >> 3)^(lfsr >> 5)) & 0x01) << 15) | (lfsr >> 1); // x^16 + x^14 + x^13 + x^11 + 1
+    return lfsr;
+}
 
 // Game Function definitions
 int game_game(){
@@ -61,8 +95,11 @@ int game_game(){
 
 int game_title(){
     basic_cls();
+    basic_locate(10,1);
     basic_print("DROP: PCjr/C/OpenWatcom/v1");
+    basic_locate(11,5);
     basic_print("By: Ryan Paterson");
+    basic_locate(15,1);
     basic_print("");
     basic_print("Press Enter to DROP...");
     basic_print("Press ESC to END MISSION...");
@@ -120,6 +157,9 @@ void game_loop(){
     game_exit();
 }
 
+unsigned long long int period;
+unsigned int start_state; // must be less than 16768
+unsigned int current_state;
 
 // --- CODE STARTS HERE ---
 int main(){
