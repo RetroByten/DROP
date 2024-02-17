@@ -2,7 +2,8 @@
 // Code starts at int main(), can search --- CODE STARTS HERE ---
 
 // Standard C includes
-#include <stdio.h>
+#include <stdio.h> // For printing
+#include <stdlib.h> // For malloc
 
 // DOS / BIOS specific includes
 #include <conio.h> // For reading the keyboard directly
@@ -163,6 +164,9 @@ unsigned int current_state;
 
 // --- CODE STARTS HERE ---
 int main(){
+    // Allocate memory for the reg_pack
+    reg_pack = (union REGPACK*)malloc(sizeof(union REGPACK));
+
     // Save video mode off
     reg_pack->h.ah = int_video_get_mode;
     intr(int_video,reg_pack);
@@ -175,6 +179,9 @@ int main(){
     // Restore the video mode
     reg_pack->w.ax = (int_video_set_mode) << 8 | orig_video_mode;
     intr(int_video,reg_pack);
+
+    // Free reg_pack memory
+    free(reg_pack);
     return 0;
 }
 
