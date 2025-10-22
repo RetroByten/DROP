@@ -78,6 +78,7 @@ void basic_print(char* s){
 
 void basic_printchar(char ch){
     printf("%c",ch);
+    fflush(stdout);
 }
 
 // Mimics BASIC locate, 1 indexed
@@ -157,7 +158,7 @@ int game_game(){
             if(entities[i].active == 0){ continue; }
             basic_locate(entities[i].yp,entities[i].xp); // Set cursor to old position
             basic_printchar(' '); // Clear old position
-            basic_locate(entities[i].yc,entities[i].xc); // Set cursor to old position
+            basic_locate(entities[i].yc,entities[i].xc); // Set cursor to new
             basic_printchar(entities[i].sprite);
         }
 
