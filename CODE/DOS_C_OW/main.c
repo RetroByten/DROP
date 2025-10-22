@@ -133,7 +133,8 @@ int game_game(){
     // Player 1 == slot 0;
     entities[0].class=ec_player;
     entities[0].active=1;
-    entities[0].sprite = 'P';
+    //entities[0].sprite = 'P';
+    entities[0].sprite = 0x01;
     entities[0].xc = 10;
     entities[0].yc = 10;
     entities[0].xp = 10;
