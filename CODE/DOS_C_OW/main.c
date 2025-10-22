@@ -23,6 +23,8 @@
 #define KEY_ESC 27
 #define KEY_ENT 13
 
+#define ENTITY_LIMIT 8
+
 // Globals enums
 enum {
     GS_GAME,
@@ -31,18 +33,35 @@ enum {
     GS_EXIT
 } gamestate_t;
 
+enum {
+    ec_player
+} entity_class_t;
+
+
+
+
 // Global Struct definitions
-//struct {
-//
-//} entity_t;
+struct entity_t{
+    unsigned int active; // 1 = yes, 0 = no
+    unsigned int class; // Entity type
+    unsigned int sprite;
+    unsigned int state;
+    unsigned int xc;
+    unsigned int yc; // Current x/y
+    unsigned int xp;
+    unsigned int yp; // Previous x/y
+    unsigned int hp; // Hitpoints
+};
+
+
 
 // Globals
 unsigned int lfsr; // Current random number
 char orig_video_mode;
 union REGPACK* reg_pack;
 int gamestate;
-char c;
-
+char c; // Player input
+struct entity_t* entities;
 
 // Utility Function definitions
 
@@ -55,6 +74,10 @@ void basic_cls(){
 // Mimics BASIC print by appending CRLF
 void basic_print(char* s){
     printf("%s%c%c",s,'\r','\n');
+}
+
+void basic_printchar(char ch){
+    printf("%c",ch);
 }
 
 // Mimics BASIC locate, 1 indexed
@@ -86,11 +109,64 @@ unsigned int basic_random(int x){
 
 // Game Function definitions
 int game_game(){
+    int i;
+
     basic_cls();
-    basic_print("GAME");
+
+// Setup
+    entities = (struct entity_t*)calloc(ENTITY_LIMIT,sizeof(struct entity_t)); // Allocate space for 8 entities
+
+    // Player 1 == slot 0;
+    entities[0].class=ec_player;
+    entities[0].active=1;
+    entities[0].sprite = 'P';
+    entities[0].xc = 10;
+    entities[0].yc = 10;
+    entities[0].xp = 10;
+    entities[0].yp = 10;
+    // Player doesn't use state yet
+    entities[0].hp = 3;
+
+// Game Loop
     do {
+        // check input (uses WASD)
+
+        switch(c){
+            case 'w':
+                entities[0].yp=entities[0].yc;
+                entities[0].yc-=1;
+                break;
+            case 's':
+                entities[0].yp=entities[0].yc;
+                entities[0].yc+=1;
+                break;
+            case 'a':
+                entities[0].xp=entities[0].xc;
+                entities[0].xc-=1;
+                break;
+            case 'd':
+                entities[0].xp=entities[0].xc;
+                entities[0].xc+=1;
+                break;
+            default:
+                break; // do nothing
+        }
+
+        //for each entity, if active, delete old position and draw new position
+        for (i = 0; i < ENTITY_LIMIT; i++){
+            if(entities[i].active == 0){ continue; }
+            basic_locate(entities[i].yp,entities[i].xp); // Set cursor to old position
+            basic_printchar(' '); // Clear old position
+            basic_locate(entities[i].yc,entities[i].xc); // Set cursor to old position
+            basic_printchar(entities[i].sprite);
+        }
+
+
+        // Get Input
         c=getch();
     } while (c != KEY_ESC);
+
+    free(entities);
     return GS_DEBRIEF;
 }
 
