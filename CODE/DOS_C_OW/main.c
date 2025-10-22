@@ -16,6 +16,7 @@
 #define int_video_set_mode 0x00
 #define mode_4025_greyscale 0x00
 #define mode_8025_greyscale 0x02
+#define int_video_set_cursor_shape 0x01
 #define int_video_set_cursor_pos 0x02
 #define int_video_get_cursor_pos 0x03
 #define int_video_get_mode 0x0F
@@ -71,6 +72,18 @@ void basic_cls(){
     intr(int_video,reg_pack);
 }
 
+void basic_disable_cursor(){
+    reg_pack->h.ah = int_video_set_cursor_shape;
+    reg_pack->w.cx = 0x2607; // Invisible cursor
+    intr(int_video,reg_pack);
+}
+void basic_enable_cursor(){
+    reg_pack->h.ah = int_video_set_cursor_shape;
+    reg_pack->w.cx = 0x0607; // Visible cursor
+    intr(int_video,reg_pack);
+}
+
+
 // Mimics BASIC print by appending CRLF
 void basic_print(char* s){
     printf("%s%c%c",s,'\r','\n');
@@ -113,7 +126,7 @@ int game_game(){
     int i;
 
     basic_cls();
-
+    basic_disable_cursor();
 // Setup
     entities = (struct entity_t*)calloc(ENTITY_LIMIT,sizeof(struct entity_t)); // Allocate space for 8 entities
 
@@ -130,30 +143,34 @@ int game_game(){
 
 // Game Loop
     do {
-        // check input (uses WASD)
 
+        // Save previous positions
+        for (i = 0; i < ENTITY_LIMIT; i++){
+            if(entities[i].active == 0){ continue; }
+            entities[i].yp=entities[i].yc;
+            entities[i].xp=entities[i].xc; // Save old position
+        }
+
+
+        // check input (uses WASD)
         switch(c){
             case 'w':
-                entities[0].yp=entities[0].yc;
-                entities[0].yc-=1;
+                 entities[0].yc-=1;
                 break;
             case 's':
-                entities[0].yp=entities[0].yc;
                 entities[0].yc+=1;
                 break;
             case 'a':
-                entities[0].xp=entities[0].xc;
                 entities[0].xc-=1;
                 break;
             case 'd':
-                entities[0].xp=entities[0].xc;
                 entities[0].xc+=1;
                 break;
             default:
                 break; // do nothing
         }
 
-        //for each entity, if active, delete old position and draw new position
+         //for each entity, if active, delete old position and draw new position
         for (i = 0; i < ENTITY_LIMIT; i++){
             if(entities[i].active == 0){ continue; }
             basic_locate(entities[i].yp,entities[i].xp); // Set cursor to old position
